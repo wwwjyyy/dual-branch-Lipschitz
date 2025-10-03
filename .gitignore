@@ -10,6 +10,9 @@ interface_test.py
 # 实验输出与数据集
 *.png
 *.tif
+*.jpg
+*.bmp
+
 experiments/
 extreme_data_vis/
 **/__pycache__/
