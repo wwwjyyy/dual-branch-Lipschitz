@@ -6,6 +6,7 @@
 
 # 实验输出与数据集
 *.png
+*.tif
 experiments/
 extreme_data_vis/
 **/__pycache__/
