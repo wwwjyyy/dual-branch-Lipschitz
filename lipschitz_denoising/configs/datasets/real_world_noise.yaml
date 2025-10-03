@@ -1,0 +1,85 @@
+# 真实世界噪声数据集配置
+_base_: ../hybrid.yaml
+
+experiment:
+  name: "real_world_noise_evaluation"
+  mode: "evaluation_only"
+  description: "在真实世界噪声数据上的性能评估"
+
+dataset:
+  name: "RealWorldNoise"
+  path: "../../data/real_world_noise"
+  type: "mixed"  # 同时包含灰度和彩色图像
+  
+  # 真实世界噪声数据集通常已经包含噪声，不需要额外添加
+  noise:
+    add_synthetic_noise: false  # 关键设置：不使用合成噪声
+    use_inherent_noise: true    # 使用图像固有的真实噪声
+  
+  # 真实世界数据特有的预处理
+  preprocessing:
+    normalize: true
+    # 真实世界数据可能需要不同的归一化参数
+    mean: [0.45, 0.45, 0.45]  # 针对真实噪声图像的均值
+    std: [0.25, 0.25, 0.25]   # 针对真实噪声图像的标准差
+    retain_original: true     # 保留原始图像信息
+    max_value: 255            # 确保正确处理8位图像
+
+  # 真实世界数据集通常包含多种噪声类型
+  noise_types_present:
+    - "sensor_noise"          # 传感器噪声
+    - "compression_artifacts" # 压缩伪影
+    - "low_light_noise"       # 低光照噪声
+    - "motion_blur"           # 运动模糊
+    - "optical_imperfections" # 光学缺陷
+
+# 调整模型参数以适应真实噪声特性
+model:
+  data_driven:
+    # 真实噪声可能更需要数据驱动方法的灵活性
+    spectral_beta: 0.95  # 稍微调整谱归一化参数
+  model_driven:
+    # 调整正则化权重以适应真实噪声特性
+    tv_weight: 0.08      # 稍强的TV正则
+    sparsity_weight: 0.08 # 稍强的稀疏正则
+  fusion:
+    # 真实噪声环境下可能需要调整融合策略
+    neighborhood_size: 11  # 更大的邻域以获得更稳定的估计
+
+# 评估配置 - 重点关注真实场景下的性能
+evaluation:
+  metrics: ["psnr", "ssim", "lsr", "mnr"]
+  # 真实噪声评估的特殊考虑
+  real_world_specific:
+    perceptual_quality: true  # 启用感知质量评估
+    human_perception_study: false # 是否进行人工主观评估
+    reference_availability: "partial" # 参考图像可用性：部分可用
+  
+  # 针对不同真实噪声类型的专门测试
+  noise_specific_tests:
+    - test_type: "low_light"
+      intensity_levels: [0.1, 0.3, 0.5, 0.7, 0.9]
+    - test_type: "compression"
+      quality_levels: [10, 30, 50, 70, 90]
+    - test_type: "sensor_noise"
+      iso_levels: [100, 400, 800, 1600, 3200]
+
+# 资源分配
+resources:
+  batch_size: 8  # 真实世界图像可能尺寸不一，使用较小的batch
+  num_workers: 6
+  memory_limit: "16G"  # 真实世界图像可能需要更多内存
+
+# 结果记录配置
+output:
+  save_denoised_examples: true
+  save_comparison_grids: true
+  save_performance_by_noise_type: true
+  generate_real_world_report: true
+
+metadata:
+  purpose: "在真实世界噪声数据上评估模型性能"
+  importance: "高 - 验证模型在实际应用中的有效性"
+  challenge: "真实噪声通常是非稳态、信号相关的，且缺乏准确的噪声模型"
+  expected_outcome: "验证模型对未知真实噪声的泛化能力"
+  related_sections: "开题报告1.1节（真实噪声需求）、3.4.1节（鲁棒性评估）"

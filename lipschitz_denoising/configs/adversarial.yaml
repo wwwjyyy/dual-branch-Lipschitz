@@ -1,0 +1,46 @@
+# 继承混合模型配置
+_base_: hybrid.yaml
+
+experiment:
+  name: "adversarial_training_v1"
+
+# 对抗训练配置 (对应开题报告3.4.2节)
+adversarial:
+  enabled: true
+  attack_type: "pgd"        # PGD白盒攻击
+  epsilon: 0.03137          # ϵ=8/255
+  alpha: 0.00784            # 攻击步长α=2/255
+  iterations: 10            # T=10次迭代
+  random_start: true
+  norm_type: "linf"         # L∞范数约束
+  
+  # 训练时对抗样本比例
+  adv_ratio: 0.5  # 50%干净样本 + 50%对抗样本
+
+  # 黑盒攻击配置
+  blackbox:
+    enabled: true
+    substitute_model: "resnet50"
+    transfer_attacks: true
+
+# 调整优化策略
+training:
+  stages:
+    - name: "standard_training"
+      epochs: 50
+      adversarial: false
+    
+    - name: "adversarial_finetune"
+      epochs: 30
+      adversarial: true
+      lr: 1.0e-5
+      adv_ratio: 0.5  # 逐步增加对抗样本比例
+
+# 增加鲁棒性评估
+evaluation:
+  robustness_tests:
+    whitebox_attacks: ["fgsm", "pgd"]
+    blackbox_attacks: ["transfer"]
+    certified_robustness: 
+      enabled: true
+      radius: 0.5

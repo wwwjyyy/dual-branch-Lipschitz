@@ -1,0 +1,84 @@
+# 主训练环境配置 (PyTorch 2.8.0 + CUDA 12.1)
+# 适用于模型训练、推理、对抗训练等任务
+
+name: "pytorch_2.8_cuda_12.1"
+description: "主训练环境，用于模型训练和推理，支持动态谱归一化与混合驱动架构"
+
+# 环境标识
+type: "training"
+version: "1.0"
+
+# Python 解释器路径（与Docker中一致）
+python_path: "/opt/conda/envs/pt28_env/bin/python"
+
+# 计算精度与性能配置
+precision: "float32"
+cudnn_benchmark: true
+cudnn_deterministic: false
+
+# 内存优化
+pinned_memory: true
+non_blocking: true
+
+# GPU配置
+gpu:
+  visible_devices: "0"              # 使用第一块GPU
+  memory_fraction: 0.9              # 最大使用90%的GPU内存
+  allow_growth: true                # 按需分配内存
+
+# 分布式训练配置（预留）
+distributed:
+  enabled: false
+  backend: "nccl"
+  world_size: 1
+  init_method: "env://"
+
+# 路径配置
+paths:
+  data_root: "/workspace/data"
+  experiment_root: "/workspace/experiments"
+  cache_dir: "/tmp/pt28_cache"
+
+# 环境变量
+env_vars:
+  OMP_NUM_THREADS: "4"
+  MKL_NUM_THREADS: "4"
+  CUDA_DEVICE_ORDER: "PCI_BUS_ID"
+  CUDA_VISIBLE_DEVICES: "0"
+
+# 资源限制（与Docker兼容）
+resources:
+  cpu_threads: 8
+  memory_limit: "16G"
+  shm_size: "2G"
+
+# 训练相关配置
+training:
+  batch_size: 16
+  num_workers: 4
+  mixed_precision: false
+  gradient_clip: 1.0
+
+# 日志与监控
+logging:
+  level: "INFO"
+  frequency: 100
+  use_tensorboard: true
+  use_wandb: false
+
+# 健康检查（可选）
+health_check:
+  enabled: true
+  interval: 300
+  checks:
+    - type: "gpu_available"
+      timeout: 30
+    - type: "memory_available"
+      threshold: 0.1
+
+# 初始化命令（用于脚本或训练前执行）
+initialization:
+  pre_run_commands:
+    - "source /opt/conda/bin/activate pt28_env"
+    - "export PYTHONPATH=/workspace:${PYTHONPATH}"
+    - "mkdir -p /tmp/pt28_cache"

@@ -1,0 +1,39 @@
+# 继承混合模型配置
+_base_: ../hybrid.yaml
+
+experiment:
+  name: "ablation_no_lipschitz_constraint"
+  group: "ablation_study"  # 用于结果分组比较
+
+# 关闭Lipschitz约束 - 验证开题报告4.1.2节中的假设
+lipschitz_constraint:
+  enabled: false
+
+# 调整训练策略（因为不需要Lipschitz约束）
+training:
+  stages:
+    - name: "warmup_model_branch"
+      epochs: 20
+      trainable_branches: ["model"]
+      lr: 1.0e-4
+    - name: "warmup_data_branch" 
+      epochs: 20
+      trainable_branches: ["data"]
+      lr: 1.0e-4
+    - name: "joint_finetune"
+      epochs: 60
+      trainable_branches: ["both"]
+      lr: 5.0e-5
+
+# 移除Lipschitz相关损失
+loss:
+  reconstruction: 1.0
+  tv: 0.05
+  sparsity: 0.1
+  # lipschitz: 0.0 (已移除)
+
+# 实验元数据
+metadata:
+  purpose: "验证Lipschitz约束对模型鲁棒性的影响"
+  hypothesis: "移除Lipschitz约束将导致模型在对抗攻击下的性能下降"
+  expected_impact: "高 - 核心创新点的验证"

@@ -1,0 +1,29 @@
+# ablation/single_branch_model.yaml
+_base_: ../hybrid.yaml
+
+experiment:
+  name: "ablation_single_branch_model"
+  group: "ablation_study"
+
+# 只使用模型驱动分支
+model:
+  data_driven:
+    enabled: false  # 禁用数据驱动分支
+  model_driven:
+    # 保持原有配置
+  fusion:
+    type: "fixed"
+    weights: [0.0, 1.0]  # 完全使用模型分支
+
+# 调整训练策略
+training:
+  stages:
+    - name: "train_model_branch"
+      epochs: 100
+      trainable_branches: ["model"]
+      lr: 1.0e-4
+
+metadata:
+  purpose: "验证纯模型驱动方法的性能"
+  hypothesis: "纯模型驱动方法在复杂噪声下泛化能力不足"
+  expected_impact: "高 - 验证混合驱动的必要性"

@@ -1,0 +1,85 @@
+# Lipschitz分析环境配置 (PyTorch 2.3.0 + auto_LiRPA)
+# 用于Lipschitz常数估计、可证明鲁棒性验证等任务
+
+name: "pytorch_2.3_auto_lirpa"
+description: "Lipschitz分析环境，用于精确的Lipschitz常数计算和验证"
+
+# 环境标识
+type: "analysis"
+version: "1.0"
+
+# Python 解释器路径（与Docker中一致）
+python_path: "/opt/conda/envs/lirpa_env/bin/python"
+
+# 计算精度与性能配置
+precision: "float64"                # 使用双精度以提高数值稳定性
+cudnn_benchmark: false
+cudnn_deterministic: true           # 确保可重复性
+
+# 内存优化
+pinned_memory: false                # 避免在分析时占用过多内存
+non_blocking: false
+
+# GPU配置
+gpu:
+  visible_devices: "0"
+  memory_fraction: 0.5              # 限制内存使用，避免影响主训练
+  allow_growth: true
+
+# 路径配置
+paths:
+  data_root: "/workspace/data"
+  experiment_root: "/workspace/experiments"
+  cache_dir: "/tmp/lirpa_cache"
+
+# 环境变量
+env_vars:
+  OMP_NUM_THREADS: "2"
+  MKL_NUM_THREADS: "2"
+  CUDA_DEVICE_ORDER: "PCI_BUS_ID"
+  AUTO_LIRPA_LOG_LEVEL: "WARNING"
+
+# 资源限制
+resources:
+  cpu_threads: 4
+  memory_limit: "8G"
+  shm_size: "1G"
+
+# auto_LiRPA 特定配置
+auto_lirpa:
+  enabled: true
+  precision: "double"
+  use_forward: true
+  use_backward: true
+  iterative: false
+
+# 分析任务配置
+analysis:
+  batch_size: 8
+  num_workers: 2
+  max_iterations: 1000
+  tolerance: 1e-6
+
+# 日志与监控
+logging:
+  level: "INFO"
+  frequency: 50
+  use_tensorboard: false
+  use_wandb: false
+
+# 健康检查（可选）
+health_check:
+  enabled: true
+  interval: 300
+  checks:
+    - type: "gpu_available"
+      timeout: 30
+    - type: "memory_available"
+      threshold: 0.2
+
+# 初始化命令
+initialization:
+  pre_run_commands:
+    - "source /opt/conda/bin/activate lirpa_env"
+    - "export PYTHONPATH=/workspace:${PYTHONPATH}"
+    - "mkdir -p /tmp/lirpa_cache"

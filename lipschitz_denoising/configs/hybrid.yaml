@@ -1,0 +1,115 @@
+# 继承基础配置
+_base_: base.yaml
+
+# 覆盖实验名称
+experiment:
+  name: "hybrid_dynamic_fusion_v1"
+
+# 网络架构配置
+model:
+  type: "DualBranchHybrid"
+  
+  # 数据驱动分支 (对应开题报告3.1.1节)
+  data_driven:
+    backbone: "resnet18"
+    use_pretrained: false
+    spectral_norm: true
+    spectral_beta: 0.99  # 滑动平均系数β，对应式2.1
+    activation: "leaky_relu"
+    activation_params:
+      negative_slope: 0.01
+    dropout: 
+      enabled: true
+      rate: 0.1
+      layers: "shallow"  # 只在浅层使用，对应开题报告4.1.2节
+    output_scale_init: 40.0  # 输出缩放初始值
+    output_bias_init: 0.0   # 输出偏置初始值
+    
+  # 模型驱动分支 (对应开题报告3.1.1节)
+  model_driven:
+    wavelet_threshold: 
+      wavelet: "haar"
+      initial_lambda: 0.1  # 式5.1中的λ初始值
+      learnable: true
+      learning_rate: 0.00005  # 特定学习率
+    tv_weight: 0.05        # λ₂ TV正则权重
+    sparsity_weight: 0.2   # λ₁ 稀疏正则权重
+    lipschitz_weight: 0.01 # λ₃ Lipschitz正则权重
+    # lipschitz_weight: 0.0  # 暂时禁用Lipschitz正则
+    # tv_weight: 0.0         # 暂时禁用TV正则
+    # sparsity_weight: 0.0   # 暂时禁用稀疏正则
+    num_iterations: 3
+    output_scale_init: 60.0  # 输出缩放初始值
+    output_bias_init: 0.0   # 输出偏置初始值
+    
+  # 动态门控融合 (对应式2.4/4)
+  fusion:
+    type: "lipschitz_aware"
+    neighborhood_size: 9   # N点邻域统计
+    activation: "sigmoid"  # σ函数
+    initial_weights: [0.5, 0.5]  # α,β初始值，对应开题报告4.2.1节
+    output_scale_init: 5.0  # 输出缩放初始值
+    output_bias_init: 0.0   # 输出偏置初始值
+
+# 训练策略 (对应开题报告7.2节解决方案1)
+training:
+  stages:
+  # - name: debug_simple
+  #   epochs: 5
+  #   trainable_branches: ['both']
+  #   freeze_other: false
+  #   lr: 0.001
+  #   fusion_lr: 0.01  # 融合模块使用更高学习率
+
+    # - name: "warmup_model_branch"
+    #   epochs: 40
+    #   trainable_branches: ["model"]  # 先单独训练模型分支
+    #   lr: 1.0e-4
+    #   freeze_other: true
+    
+    - name: "warmup_data_branch" 
+      epochs: 200
+      trainable_branches: ["data"]   # 再单独训练数据分支
+      lr: 1.0e-4
+      freeze_other: true
+      
+    # - name: "joint_finetune"
+    #   epochs: 200
+    #   trainable_branches: ["both"]   # 联合微调
+    #   lr: 5.0e-5
+    #   fusion_lr: 1.0e-3  # 门控模块使用更高学习率
+    #   freeze_other: false
+
+# 新增输出范围监控配置
+output_monitoring:
+  enabled: true
+  interval: 5  # 每5个epoch记录一次输出范围
+  branches: ["data", "model", "fusion", "final"]  # 监控所有分支的输出范围
+
+# Lipschitz约束配置 (对应式5.2)
+lipschitz_constraint:
+  enabled: false
+  target_constant: 2.5      # K_target，通过预实验校准
+  penalty_lambda: 0.1       # λ惩罚系数
+  estimation_method: "power_iteration"  # 幂迭代法
+  max_iterations: 5         # FPI快速幂迭代，减少40%时间
+  update_interval: 10       # 每10个batch更新一次估计
+
+# 损失函数权重
+loss:
+  reconstruction: 1.0       # 重构损失
+  lipschitz: 0.1            # Lipschitz正则项
+  tv: 0.05                  # TV正则
+  sparsity: 0.1             # 稀疏正则
+  # lipschitz: 0.0
+  # tv: 0.0
+  # sparsity: 0.0
+  output_range: 0.1         # 输出范围正则化权重
+
+# 评估配置
+evaluation:
+  metrics: ["psnr", "ssim", "lsr", "mnr", "ddd"]
+  robustness_tests:
+    noise_types: ["gaussian", "poisson", "impulse"]
+    noise_ratio: [0.5, 0.3, 0.2]  # 高斯:泊松:脉冲 = 5:3:2
+    adversarial_attacks: ["fgsm", "pgd"]

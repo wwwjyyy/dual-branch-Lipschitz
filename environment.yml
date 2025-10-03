@@ -1,0 +1,66 @@
+# 双环境配置: 主训练环境 (pt28_env) 和 Lipschitz 分析环境 (lirpa_env)
+# 使用方式:
+#   创建主训练环境: conda env create -f environment.yml -n pt28_env
+#   创建Lipschitz分析环境: conda env create -f environment.yml -n lirpa_env
+#   防一手炸环境
+
+# 主训练环境 (pt28_env) - PyTorch 2.8.0 + CUDA 12.1
+name: pt28_env
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - cudatoolkit=12.1
+  - cudnn=8.9
+  - numpy=1.24
+  - scipy=1.10
+  - matplotlib=3.7
+  - pandas=2.0
+  - scikit-image=0.21
+  - scikit-learn=1.3
+  - tqdm=4.65
+  - jupyter=1.0
+  - ipython=8.14
+  - tensorboard=2.13
+  - opencv=4.8
+  - pillow=10.0
+  - seaborn=0.12
+  - pyyaml=6.0
+  - pip:
+    - torch==2.8.0
+    - torchvision==0.23.0
+    - torchaudio==2.8.0
+    - wandb==0.15.8
+    - albumentations==1.3.0
+    - kornia==0.7.0
+    - pywavelets==1.4.1
+    - opencv-python==4.8.0.74
+
+# Lipschitz 分析环境 (lirpa_env) - PyTorch 2.3.0 + auto_LiRPA
+name: lirpa_env
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - cudatoolkit=12.1
+  - cudnn=8.9
+  - numpy=1.24
+  - scipy=1.10
+  - matplotlib=3.7
+  - pandas=2.0
+  - scikit-image=0.21
+  - tqdm=4.65
+  - ipython=8.14
+  - pyyaml=6.0
+  - pip:
+    - torch==2.3.0
+    - torchvision==0.18.0
+    - torchaudio==2.3.0
+    - git+https://github.com/KaidiXu/auto_LiRPA.git
+    - cvxpy==1.4.1

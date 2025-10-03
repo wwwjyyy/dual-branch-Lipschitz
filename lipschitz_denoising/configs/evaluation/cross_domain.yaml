@@ -1,0 +1,135 @@
+# 跨域评估专用配置
+_base_: ../hybrid.yaml
+
+experiment:
+  name: "cross_domain_evaluation_comprehensive"
+  mode: "evaluation_only"
+  description: "全面跨域泛化能力评估"
+
+# 跨域评估需要多个数据集
+dataset:
+  source_domains:
+    - name: "BSD68"
+      path: "../data/basic_gray/BSD68"
+      type: "gray"
+      domain_type: "natural_images"
+    - name: "CBSD68"
+      path: "../data/hi-quality_cc/CBSD68"
+      type: "color"
+      domain_type: "natural_images_color"
+  
+  target_domains:
+    - name: "MedicalCT"
+      path: "../data/medical_ct"
+      type: "gray"
+      domain_type: "medical_images"
+      modalities: ["ct", "mri"]
+    - name: "RemoteSensing"
+      path: "../data/remote_sensing"
+      type: "color"
+      domain_type: "remote_sensing"
+    - name: "Microscopy"
+      path: "../data/microscopy"
+      type: "gray"
+      domain_type: "scientific_images"
+
+# 跨域迁移策略配置
+transfer_learning:
+  enabled: true
+  strategies:
+    - name: "direct_transfer"
+      description: "源域训练后直接在目标域测试"
+      fine_tuning: false
+    - name: "full_fine_tuning"
+      description: "在目标域数据上全面微调"
+      fine_tuning: true
+      freeze_backbone: false
+      learning_rate: 1.0e-5
+      epochs: 50
+    - name: "partial_fine_tuning"
+      description: "只微调部分层"
+      fine_tuning: true
+      freeze_backbone: true
+      layers_to_finetune: ["fusion", "output_layers"]
+      learning_rate: 5.0e-5
+      epochs: 30
+  
+  # 少样本学习设置
+  few_shot_settings:
+    enabled: true
+    shot_numbers: [1, 5, 10, 20, 50]  # n-shot学习
+    repetitions: 5  # 每个设置重复5次以减少随机性
+
+# 跨域评估指标
+evaluation:
+  cross_domain_metrics:
+    primary:
+      - "psnr"
+      - "ssim"
+      - "ddd"  # 域差异衰减率（式3.3）
+      - "prr"  # 性能恢复率
+    secondary:
+      - "lsr"  # Lipschitz敏感度比
+      - "mnr"  # 混合噪声鲁棒性
+      - "tTR"  # 迁移训练比率
+  
+  # 域差异度量
+  domain_gap_metrics:
+    - name: "feature_distribution_distance"
+      method: "mmd"  # 最大均值差异
+    - name: "label_distribution_divergence"
+      method: "kl_divergence"
+    - name: "structural_dissimilarity"
+      method: "dssim"
+  
+  # 跨域鲁棒性测试
+  cross_domain_robustness:
+    noise_transfer: true  # 测试噪声类型的跨域转移
+    adversarial_transfer: true  # 测试对抗攻击的跨域效果
+    corruption_benchmark: true  # 使用标准损坏基准测试
+
+# 专门针对跨域分析的模型调整
+model:
+  # 跨域环境下可能需要调整的参数
+  data_driven:
+    use_domain_adaptation: true
+    adaptation_method: "adain"  # 自适应实例归一化
+  fusion:
+    domain_aware: true
+    use_domain_information: true
+  
+  # 正则化调整以适应域偏移
+  regularization:
+    domain_regularization: true
+    method: "mmd_regularization"
+    weight: 0.01
+
+# 可视化配置
+visualization:
+  cross_domain_visualizations:
+    - type: "feature_embedding"
+      method: "tsne"
+      dimensions: 2
+    - type: "domain_separation"
+      method: "pca"
+    - type: "performance_correlation"
+      metrics: ["ddd", "psnr"]
+  
+  # 生成跨域分析报告
+  generate_domain_analysis_report: true
+  include_case_studies: true
+
+# 资源分配（跨域评估可能很耗时）
+resources:
+  batch_size: 8
+  num_workers: 8
+  timeout_hours: 72  # 允许长时间运行
+  checkpoint_interval: 5  # 频繁保存检查点
+
+metadata:
+  purpose: "全面评估模型在不同领域间的泛化能力"
+  importance: "极高 - 验证模型的实用性和泛化性"
+  challenge: "域偏移、分布差异、特征不匹配"
+  expected_outcome: "量化模型从自然图像到医学/遥感/科学图像的迁移能力"
+  related_sections: "开题报告3.4.3节（跨域泛化能力评估）、1.2节（研究目的）"
+  scientific_value: "为深度学习在跨域图像处理中的可靠性提供实证依据"

@@ -1,0 +1,39 @@
+# Lipschitz分析专用配置
+_base_: ../hybrid.yaml
+
+experiment:
+  name: "lipschitz_analysis_deep"
+  mode: "analysis_only"
+  env: "lirpa_env"  # 使用Lipschitz分析专用环境
+
+# 专注于Lipschitz分析
+evaluation:
+  lipschitz_analysis:
+    enabled: true
+    methods:
+      - type: "power_iteration"  # 幂迭代法估计上界
+        max_iterations: 100      # 更多迭代以提高精度
+        tolerance: 1e-6
+      - type: "jacobian"         # Jacobian范数估计下界
+        points: 1000             # 使用更多点提高估计精度
+        batch_size: 1            # 逐点计算确保精度
+      - type: "auto_lirpa"       # 使用auto_LiRPA进行更精确分析
+        mode: "CROWN"
+    layers_to_analyze: ["all"]   # 分析所有层
+    save_analysis: true          # 保存详细分析结果
+
+# 调整资源配置以适应精确分析
+resources:
+  batch_size: 1      # 小batch size确保精度
+  num_workers: 4
+  use_amp: false     # 禁用混合精度以确保数值精度
+
+# 可视化配置
+visualization:
+  lipschitz_constants: true
+  sensitivity_maps: true
+  worst_case_perturbations: true
+
+metadata:
+  purpose: "深度Lipschitz分析"
+  expected_outcome: "验证理论推导的Lipschitz上界和下界"

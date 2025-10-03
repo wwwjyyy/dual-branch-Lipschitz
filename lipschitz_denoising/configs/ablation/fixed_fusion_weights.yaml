@@ -1,0 +1,36 @@
+# 继承混合模型配置
+_base_: ../hybrid.yaml
+
+experiment:
+  name: "ablation_fixed_fusion_weights"
+  group: "ablation_study"
+
+# 固定融合权重 - 对比开题报告中的动态门控机制
+model:
+  fusion:
+    type: "fixed"  # 改为固定权重
+    weights: [0.5, 0.5]  # α=β=0.5
+    # 注意：不再使用neighborhood_size和activation参数
+
+# 调整训练策略（不需要学习融合权重）
+training:
+  stages:
+    - name: "warmup_model_branch"
+      epochs: 20
+      trainable_branches: ["model"]
+      lr: 1.0e-4
+    - name: "warmup_data_branch" 
+      epochs: 20
+      trainable_branches: ["data"]
+      lr: 1.0e-4
+    - name: "joint_finetune"
+      epochs: 60
+      trainable_branches: ["both"]
+      lr: 5.0e-5
+      # 移除fusion_lr参数
+
+# 实验元数据
+metadata:
+  purpose: "验证动态门控融合机制的有效性"
+  hypothesis: "固定权重融合将导致模型在不同区域无法自适应选择最优分支"
+  expected_impact: "中 - 验证开题报告3.1.1节中的创新点"

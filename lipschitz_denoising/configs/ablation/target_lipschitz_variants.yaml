@@ -1,0 +1,30 @@
+# 继承混合模型配置
+_base_: ../hybrid.yaml
+
+experiment:
+  name: "ablation_target_lipschitz_variants"
+  group: "ablation_study"
+
+# Lipschitz目标值变体 - 验证开题报告4.3.2节
+lipschitz_constraint:
+  target_constant: 1.5  # 低约束版本
+  # 其他参数保持不变
+
+# 实验元数据
+metadata:
+  purpose: "验证不同Lipschitz目标值对模型的影响"
+  hypothesis: "过小的K_target会限制模型容量，过大的K_target会降低鲁棒性"
+  expected_impact: "中 - 为Lipschitz约束提供参数选择依据"
+
+---
+# 第二个变体配置
+experiment:
+  name: "ablation_target_lipschitz_high"
+  group: "ablation_study"
+
+lipschitz_constraint:
+  target_constant: 3.5  # 高约束版本
+
+metadata:
+  purpose: "验证较高Lipschitz目标值对模型的影响"
+  hypothesis: "较高的K_target能保持模型容量但可能降低鲁棒性"

@@ -1,0 +1,38 @@
+# 迁移学习配置
+_base_: ../hybrid.yaml
+
+dataset:
+  source:
+    name: "BSD68"
+    path: "../../data/basic_gray/BSD68"
+  target:
+    name: "MedicalCT"
+    path: "../../data/medical_ct"
+  
+  # 迁移学习策略
+  transfer:
+    method: "fine_tuning"
+    freeze_backbone: false
+    layers_to_finetune: ["all"]  # 微调所有层
+    learning_rate_ratio: 0.1     # 目标域学习率是源域的10%
+
+# 调整训练策略用于迁移学习
+training:
+  stages:
+    - name: "source_pretraining"
+      epochs: 50
+      dataset: "source"
+      lr: 1.0e-4
+    - name: "target_finetuning"
+      epochs: 30
+      dataset: "target"
+      lr: 1.0e-5  # 更小的学习率
+
+# 评估配置 - 重点关注跨域性能
+evaluation:
+  metrics: ["psnr", "ssim", "ddd"]  # DDD是域差异衰减率
+  cross_domain: true
+
+metadata:
+  purpose: "跨域迁移学习实验"
+  expected_outcome: "验证模型从自然图像到医学影像的迁移能力"

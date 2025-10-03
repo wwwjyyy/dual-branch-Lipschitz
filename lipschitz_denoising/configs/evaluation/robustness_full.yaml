@@ -1,0 +1,64 @@
+# 全面鲁棒性评估配置
+_base_: ../hybrid.yaml
+
+experiment:
+  name: "robustness_evaluation_full"
+  mode: "evaluation_only"  # 仅评估，不训练
+
+# 覆盖数据集配置以包含所有测试集
+dataset:
+  testsets:
+    - name: "BSD68"
+      path: "../data/basic_gray/BSD68"
+    - name: "MedicalCT"
+      path: "../data/medical_ct"
+    - name: "RealNoise"
+      path: "../data/real_world_noise"
+
+# 全面鲁棒性测试协议 - 对应开题报告3.4节
+evaluation:
+  # 噪声鲁棒性测试
+  noise_robustness:
+    enabled: true
+    types:
+      - type: "gaussian"
+        sigma_range: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50]
+      - type: "poisson"
+        lambda_range: [10, 20, 30, 40, 50]
+      - type: "impulse"
+        density_range: [0.01, 0.03, 0.05, 0.07, 0.10]
+      - type: "mixed"
+        components_range:
+          - {type: "gaussian", sigma: 25, ratio: 0.5}
+          - {type: "poisson", lambda: 30, ratio: 0.3}
+          - {type: "impulse", density: 0.1, ratio: 0.2}
+  
+  # 对抗鲁棒性测试 - 对应开题报告3.4.2节
+  adversarial_robustness:
+    enabled: true
+    whitebox_attacks:
+      - type: "fgsm"
+        epsilon: [2/255, 4/255, 8/255, 16/255]
+      - type: "pgd"
+        epsilon: 8/255
+        alpha: 2/255
+        iterations: [5, 10, 20, 40]
+    blackbox_attacks:
+      - type: "transfer"
+        substitute_models: ["resnet50", "vgg16", "densenet121"]
+    certified_robustness:
+      enabled: true
+      radius: [0.25, 0.5, 0.75, 1.0]
+  
+  # 评估指标
+  metrics: ["psnr", "ssim", "lsr", "mnr", "asr", "ca"]
+
+# 资源分配（评估可能需要更多资源）
+resources:
+  batch_size: 8  # 小batch size以确保内存足够
+  num_workers: 8
+  use_amp: true   # 自动混合精度加速评估
+
+metadata:
+  purpose: "全面鲁棒性评估"
+  expected_outcome: "生成完整的鲁棒性分析报告"

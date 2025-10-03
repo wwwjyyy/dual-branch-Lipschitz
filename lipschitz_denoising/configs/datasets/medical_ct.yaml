@@ -1,0 +1,47 @@
+# 继承BSD68配置但覆盖特定值
+_base_: bsd68.yaml
+
+dataset:
+  name: "MedicalCT"
+  path: "../../data/medical_ct"
+  type: "gray"
+  
+  # 医学影像特有的噪声模式 - 对应开题报告1.1节
+  noise:
+    train:
+      type: "mixed"
+      components:
+        - type: "gaussian"  # 电子噪声
+          sigma: 20
+          ratio: 0.6
+        - type: "poisson"   # 量子噪声
+          lambda: 40
+          ratio: 0.4
+    test:
+      type: "mixed"
+      components:
+        - type: "gaussian"
+          sigma: 20
+          ratio: 0.6
+        - type: "poisson"
+          lambda: 40
+          ratio: 0.4
+        - type: "motion"    # 运动伪影 - 医学影像特有
+          intensity: 0.1
+          ratio: 0.2
+
+# 医学影像可能需要不同的预处理
+data:
+  normalize: true
+  mean: [0.45]  # 医学影像的特定均值
+  std: [0.25]   # 医学影像的特定标准差
+
+# 调整模型参数以适应医学影像特性
+model:
+  model_driven:
+    tv_weight: 0.1  # 医学影像需要更强的平滑约束
+    sparsity_weight: 0.05
+
+metadata:
+  purpose: "医学影像CT数据上的专门测试"
+  expected_outcome: "验证模型在医学影像上的泛化能力"
