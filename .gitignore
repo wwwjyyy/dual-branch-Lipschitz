@@ -1,8 +1,11 @@
 # 奇怪的小目录与文档
 *.md
-! struct.md
-! README.md
+!struct.md
+!README.md
 *.txt
+saving.py
+saving_mk2.py
+interface_test.py
 
 # 实验输出与数据集
 *.png
